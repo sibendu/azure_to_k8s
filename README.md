@@ -1,20 +1,23 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+A sample project using grade and SpirnBoot. Deployed to target kubernetes cluster using Azure DevOps Pipelines
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+# Steps
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+1.	Changes Needed
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+- Create Azure Service Connection named 'Docker_Hub' -> points to docker hub repo (used in azure-pipelines.yml)
+- In azure-pipelines.yml, adjust values for Repo, RepoOrg
+- In docker-build-push.yml, adjust values for Repo, RepoOrg
+- In /postman_collection/env/DEV.postman_environment.json, adjust value for key BASE_URL -> this should point to URL of deployed services   
+
+2.	Azure DevOps Pipelines
+
+Create following pipelines - 
+- Pipeline name 'Digital_EKS' using azure-pipelines.yml -> If a differen name, update azure-pipelines-CD.yml as it should be triggered after this first pipeline
+- Another pipeline (any name e.g. CustomerService_Deploy) using azure-pipelines-CD.yml 
+
+3.	To Do
+
+- This project contains Kubernetes configuration file i.e. config. It should be made secure using Azure File Connection 
+
