@@ -17,6 +17,9 @@ Create following pipelines -
 - Pipeline name 'Digital_EKS' using azure-pipelines.yml -> If a differen name, update azure-pipelines-CD.yml as it should be triggered after this first pipeline
 - Another pipeline (any name e.g. CustomerService_Deploy) using azure-pipelines-CD.yml 
 
+This will create a NodePort service at port 30080 e.g. http://<host>:30080/greeting 
+
+
 3.	To Do
 
 - This project contains Kubernetes configuration file i.e. config. It should be made secure using Azure File Connection 
