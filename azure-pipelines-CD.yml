@@ -1,0 +1,69 @@
+variables: 
+- name:  V_TEST_SUITE_NAME
+  value: 'postman_collection/collection/CustomerService.postman_collection.json'
+- name:  V_TEST_SUITE_ENV_NAME
+  value: 'postman_collection/env/DEV.postman_environment.json'
+- name:  V_BROWSER_TITLE
+  value: 'CustomerService Report'
+- name:  V_TITLE
+  value: 'CustomerService DASHBOARD'
+- name:  Version.MajorMinor
+  value: 1.0
+- name:  Version.Revision
+  value: $[counter(variables['Version.MajorMinor'], 0)]
+- group: AWS_Credentials
+
+name: $(Version.MajorMinor).$(Version.Revision)
+
+# To restrict pipeline trigger from pushes to any branch
+trigger: none
+
+# To restrict pipeline trigger from pull request form or to any branch
+pr: none
+
+resources:
+  pipelines:
+  - pipeline: customer-service
+    source: "Digital_EKS"
+    branch: main
+    trigger: true
+
+pool:
+  vmImage: ubuntu-latest
+
+
+stages:
+  - stage: CustomerService_deployment
+    displayName: 'CustomerService deployment'
+    jobs:
+    - job: customerServiceDeployment
+      steps:
+        - task: Bash@3
+          inputs:
+            targetType: 'inline'
+            script: |
+              ls -l
+              export KUBECONFIG=config
+              echo $KUBECONFIG 
+              kubectl apply -f customer-service-deployment.yaml --insecure-skip-tls-verify 
+              #export AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID)
+              #export AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)
+              #aws eks --region us-east-1 update-kubeconfig --name itaap-dev
+              #imageTagName=$(resources.pipeline.notification-service.runName)
+              #template=`cat notification-service-deployment.yaml | sed "s/{{imageTagName}}/$imageTagName/g"`
+              #echo "$template" | kubectl apply -f -
+              #kubectl apply -f notification-service-ingress.yaml
+
+  - stage: CustomerService_Validation_post_deployment
+    displayName: 'CustomerService validation post deployment'
+    jobs:
+    - job: CustomerService_Validation_post_deployment
+      steps:
+        - template: newman-report-template.yaml
+          parameters:
+            P_TEST_SUITE_NAME: ${{ variables.V_TEST_SUITE_NAME }}
+            P_TEST_SUITE_ENV_NAME:  ${{ variables.V_TEST_SUITE_ENV_NAME }} 
+            P_BROWSER_TITLE: ${{ variables.V_BROWSER_TITLE }}
+            P_TITLE: ${{ variables.V_TITLE }}
+
+      

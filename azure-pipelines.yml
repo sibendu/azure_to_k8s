@@ -1,0 +1,85 @@
+# Gradle
+# Build your Java project and run tests with Gradle using a Gradle wrapper script.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+variables: 
+  - name : Version.MajorMinor
+    value: 1.0
+  - name: Version.Revision
+    value: $[counter(variables['Version.MajorMinor'], 0)]
+  - name: ImageName 
+    value: customerservice
+  - name: Repo 
+    value: 'Docker_Hub'
+  - name: RepoOrg
+    value: 'sibendu'
+  - name: Dockerfile
+    value : 'CustomerService/Dockerfile'  
+  - group: AWS_Credentials
+      
+name: $(Version.MajorMinor).$(Version.Revision)
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: Gradle@2
+  inputs:
+    workingDirectory: 'CustomerService'
+    gradleWrapperFile: 'CustomerService/gradlew'
+    gradleOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    options: ''
+    testResultsFiles: '**/TEST-*.xml'
+    tasks: 'clean build'
+        
+- task: Bash@3
+  condition: succeededOrFailed()
+  inputs:
+    targetType: 'inline'
+    script: |
+      ls -lart
+      echo '===================='
+      var=$(nslookup www.google.com)
+      echo 'Result === $var'
+      docker ps
+      echo '=========================='
+      docker -v
+      echo '================================='
+      cd $(Build.SourcesDirectory)/NotificationService/build/libs
+      ls -lart
+      echo '===================='
+      cd $(Build.SourcesDirectory)/NotificationService/build/reports/tests/test
+      ls -lart
+      echo '===================='
+      echo "$(username)"
+      echo "$(Build.BuildNumber)"
+      echo "$(AWS_ACCESS_KEY_ID)"
+      echo "$(AWS_SECRET_ACCESS_KEY)"
+  
+- task: PublishBuildArtifacts@1
+  condition: succeededOrFailed()
+  inputs:
+    pathToPublish: $(Build.SourcesDirectory)/CustomerService/build/reports/tests/test
+    artifactName: MyBuildOutputs
+    
+- task: PublishCodeCoverageResults@1
+  inputs:
+    codeCoverageTool: 'JaCoCo'
+    summaryFileLocation: '$(Build.SourcesDirectory)/CustomerService/build/reports/jacoco/test/jacocoTestReport.xml'
+    reportDirectory: '$(Build.SourcesDirectory)/CustomerService/build/reports/jacoco/test/html'    
+    
+    
+- task: Docker@2
+  condition: and(ne(variables['Build.Reason'], 'PullRequest')
+    , eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+- template: docker-build-push.yml
+  parameters:
+    ImageName: $(ImageName)
+    AddImageTag: $(Version.MajorMinor).$(Version.Revision)
+    Repo: $(Repo)
+    RepoOrg: $(RepoOrg)
+    Dockerfile: $(Dockerfile)
